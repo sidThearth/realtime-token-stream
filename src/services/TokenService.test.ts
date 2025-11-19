@@ -2,6 +2,7 @@ import { TokenService } from './TokenService';
 import { DexScreenerClient } from '../clients/DexScreenerClient';
 import { JupiterClient } from '../clients/JupiterClient';
 import { CacheService } from './CacheService';
+import { TokenData } from '../types';
 
 // Mock dependencies
 jest.mock('../clients/DexScreenerClient');
@@ -10,55 +11,132 @@ jest.mock('./CacheService');
 
 describe('TokenService', () => {
     let tokenService: TokenService;
-    let mockDexClient: jest.Mocked<DexScreenerClient>;
-    let mockJupClient: jest.Mocked<JupiterClient>;
+    let mockDexScreener: jest.Mocked<DexScreenerClient>;
+    let mockJupiter: jest.Mocked<JupiterClient>;
     let mockCache: jest.Mocked<CacheService>;
 
-    beforeEach(() => {
-        mockDexClient = new DexScreenerClient() as jest.Mocked<DexScreenerClient>;
-        mockJupClient = new JupiterClient() as jest.Mocked<JupiterClient>;
+    const mockToken: TokenData = {
+        tokenAddress: 'addr1',
+        tokenName: 'Test Token',
+        tokenTicker: 'TEST',
+        priceSol: 1.5,
+        liquiditySol: 1000,
+        volumeSol: 5000,
+        transactionCount: 100,
+        protocol: 'dexscreener',
+        lastUpdated: new Date()
+    };
 
-        // Mock CacheService instance
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockDexScreener = new DexScreenerClient() as any;
+        mockJupiter = new JupiterClient() as any;
         mockCache = {
             get: jest.fn(),
             set: jest.fn(),
-            del: jest.fn(),
         } as any;
 
-        (DexScreenerClient as jest.Mock).mockImplementation(() => mockDexClient);
-        (JupiterClient as jest.Mock).mockImplementation(() => mockJupClient);
         (CacheService.getInstance as jest.Mock).mockReturnValue(mockCache);
 
+        // Re-instantiate to inject mocks
         tokenService = new TokenService();
+        (tokenService as any).dexScreener = mockDexScreener;
+        (tokenService as any).jupiter = mockJupiter;
+        (tokenService as any).cache = mockCache;
     });
 
-    it('should return cached results if available', async () => {
-        const mockTokens = [{ tokenAddress: '123', name: 'Test' }];
-        mockCache.get.mockResolvedValue(mockTokens as any);
+    describe('searchTokens', () => {
+        it('should return cached data if available', async () => {
+            mockCache.get.mockResolvedValue([mockToken]);
+            const result = await tokenService.searchTokens('TEST');
+            expect(result).toEqual([mockToken]);
+            expect(mockDexScreener.searchTokens).not.toHaveBeenCalled();
+        });
 
-        const result = await tokenService.searchTokens('SOL');
+        it('should fetch from APIs if cache is empty', async () => {
+            mockCache.get.mockResolvedValue(null);
+            mockDexScreener.searchTokens.mockResolvedValue([mockToken]);
+            mockJupiter.searchTokens.mockResolvedValue([]);
 
-        expect(result).toEqual(mockTokens);
-        expect(mockDexClient.searchTokens).not.toHaveBeenCalled();
-    });
+            const result = await tokenService.searchTokens('TEST');
+            expect(result).toHaveLength(1);
+            expect(result[0].tokenAddress).toBe('addr1');
+            expect(mockCache.set).toHaveBeenCalled();
+        });
 
-    it('should fetch and merge data if cache miss', async () => {
-        mockCache.get.mockResolvedValue(null);
+        it('should prioritize DexScreener data over Jupiter', async () => {
+            const dexToken = { ...mockToken, priceSol: 1.5, protocol: 'dexscreener' };
+            const jupToken = { ...mockToken, priceSol: 1.0, protocol: 'jupiter' }; // Lower price, should be ignored
 
-        const dexTokens = [{
-            tokenAddress: 'addr1', name: 'Token1', source: 'dexscreener', liquidity: 1000
-        }];
-        const jupTokens = [{
-            tokenAddress: 'addr1', name: 'Token1', source: 'jupiter', liquidity: 0
-        }];
+            mockCache.get.mockResolvedValue(null);
+            mockDexScreener.searchTokens.mockResolvedValue([dexToken]);
+            mockJupiter.searchTokens.mockResolvedValue([jupToken]);
 
-        mockDexClient.searchTokens.mockResolvedValue(dexTokens as any);
-        mockJupClient.searchTokens.mockResolvedValue(jupTokens as any);
+            const result = await tokenService.searchTokens('TEST');
+            expect(result).toHaveLength(1);
+            expect(result[0].priceSol).toBe(1.5); // DexScreener price
+            expect(result[0].protocol).toBe('dexscreener');
+        });
 
-        const result = await tokenService.searchTokens('SOL');
+        it('should include Jupiter-only tokens', async () => {
+            const jupToken = { ...mockToken, tokenAddress: 'addr2', protocol: 'jupiter' };
 
-        expect(result).toHaveLength(1);
-        expect(result[0].source).toBe('dexscreener'); // Should prefer DexScreener
-        expect(mockCache.set).toHaveBeenCalled();
+            mockCache.get.mockResolvedValue(null);
+            mockDexScreener.searchTokens.mockResolvedValue([mockToken]);
+            mockJupiter.searchTokens.mockResolvedValue([jupToken]);
+
+            const result = await tokenService.searchTokens('TEST');
+            expect(result).toHaveLength(2);
+            expect(result.find(t => t.tokenAddress === 'addr2')).toBeDefined();
+        });
+
+        it('should handle DexScreener failure gracefully', async () => {
+            mockCache.get.mockResolvedValue(null);
+            mockDexScreener.searchTokens.mockRejectedValue(new Error('API Error'));
+            mockJupiter.searchTokens.mockResolvedValue([mockToken]);
+
+            await expect(tokenService.searchTokens('TEST')).rejects.toThrow();
+        });
+
+        it('should deduplicate tokens by address', async () => {
+            const duplicateToken = { ...mockToken };
+            mockCache.get.mockResolvedValue(null);
+            mockDexScreener.searchTokens.mockResolvedValue([mockToken]);
+            mockJupiter.searchTokens.mockResolvedValue([duplicateToken]);
+
+            const result = await tokenService.searchTokens('TEST');
+            expect(result).toHaveLength(1);
+        });
+
+        it('should skip cache if skipCache is true', async () => {
+            mockDexScreener.searchTokens.mockResolvedValue([mockToken]);
+            mockJupiter.searchTokens.mockResolvedValue([]);
+
+            await tokenService.searchTokens('TEST', true);
+            expect(mockCache.get).not.toHaveBeenCalled();
+            expect(mockDexScreener.searchTokens).toHaveBeenCalled();
+        });
+
+        it('should handle empty results from both APIs', async () => {
+            mockCache.get.mockResolvedValue(null);
+            mockDexScreener.searchTokens.mockResolvedValue([]);
+            mockJupiter.searchTokens.mockResolvedValue([]);
+
+            const result = await tokenService.searchTokens('EMPTY');
+            expect(result).toEqual([]);
+        });
+
+        it('should cache merged results', async () => {
+            mockCache.get.mockResolvedValue(null);
+            mockDexScreener.searchTokens.mockResolvedValue([mockToken]);
+            mockJupiter.searchTokens.mockResolvedValue([]);
+
+            await tokenService.searchTokens('TEST');
+            expect(mockCache.set).toHaveBeenCalledWith(
+                expect.stringContaining('tokens:search:TEST'),
+                expect.any(Array),
+                60
+            );
+        });
     });
 });
