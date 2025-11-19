@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meme Aggregator Live</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            padding: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            transition: all 0.3s;
+        }
+
+        .card.updated {
+            border-color: #22c55e;
+            background: #14532d;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .symbol {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .price {
+            font-family: monospace;
+            font-size: 1.1em;
+        }
+
+        .meta {
+            font-size: 0.9em;
+            color: #94a3b8;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Live Token Updates 🚀</h1>
+    <div id="container" class="grid"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const container = document.getElementById('container');
+        const tokens = new Map();
+
+        // 1. Initial Data Load
+        async function loadInitialData() {
+            try {
+                const response = await fetch('/api/tokens?query=MOODENG');
+                const data = await response.json();
+                // API now returns { tokens: [...], nextCursor: ... }
+                const tokenList = data.tokens || [];
+                tokenList.forEach(token => updateCard(token));
+                console.log('Initial data loaded:', tokenList.length, 'tokens');
+            } catch (error) {
+                console.error('Failed to load initial data:', error);
+            }
+        }
+
+        loadInitialData();
+
+        // 2. WebSocket Updates
+        socket.on('connect', () => {
+            console.log('Connected to WebSocket');
+            <style>
+                body {
+                    font - family: 'Inter', sans-serif;
+                background: #0f172a;
+                color: #f8fafc;
+                padding: 20px;
+        }
+
+                .grid {
+                    display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 20px;
+        }
+
+                .card {
+                    background: #1e293b;
+                padding: 20px;
+                border-radius: 12px;
+                border: 1px solid #334155;
+                transition: all 0.3s;
+        }
+
+                .card.updated {
+                    border - color: #22c55e;
+                background: #14532d;
+        }
+
+                .header {
+                    display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 10px;
+        }
+
+                .symbol {
+                    font - weight: bold;
+                font-size: 1.2em;
+        }
+
+                .price {
+                    font - family: monospace;
+                font-size: 1.1em;
+        }
+
+                .meta {
+                    font - size: 0.9em;
+                color: #94a3b8;
+                margin-top: 10px;
+        }
+            </style>
+                                </head >
+
+                <body>
+                    <h1>Live Token Updates 🚀</h1>
+                    <div id="container" class="grid"></div>
+
+                    <script src="/socket.io/socket.io.js"></script>
+    <script>
+                                            const socket = io();
+                                            const container = document.getElementById('container');
+                                            const tokens = new Map();
+
+                                            // 1. Initial Data Load
+                                            async function loadInitialData() {
+            try {
+                const response = await fetch('/api/tokens?query=MOODENG');
+                                            const data = await response.json();
+                // API now returns {tokens: [...], nextCursor: ... }
+                                            const tokenList = data.tokens || [];
+                tokenList.forEach(token => updateCard(token));
+                                            console.log('Initial data loaded:', tokenList.length, 'tokens');
+            } catch (error) {
+                                                console.error('Failed to load initial data:', error);
+            }
+        }
+
+                                            loadInitialData();
+
+        // 2. WebSocket Updates
+        socket.on('connect', () => {
+                                                console.log('Connected to WebSocket');
+        });
+
+        socket.on('priceUpdate', (token) => {
+                                                updateCard(token);
+        });
+
+                                            function updateCard(token) {
+                                                let card = tokens.get(token.tokenAddress);
+
+                                            if (!card) {
+                                                card = document.createElement('div');
+                                            card.className = 'card';
+                                            container.appendChild(card);
+                                            tokens.set(token.tokenAddress, card);
+            }
+
+                                            // Flash effect
+                                            card.classList.add('updated');
+            setTimeout(() => card.classList.remove('updated'), 500);
+
+                                            card.innerHTML = `
+                                            <div class="header">
+                                                <span class="symbol">${token.token_ticker}</span>
+                                                <span class="price">$${token.price_sol.toFixed(6)}</span>
+                                            </div>
+                                            <div class="name">${token.token_name}</div>
+                                            <div class="meta">
+                                                <div>Vol: $${token.volume_sol.toLocaleString()}</div>
+                                                <div>Liq: $${token.liquidity_sol.toLocaleString()}</div>
+                                                <div>Txns: ${token.transaction_count.toLocaleString()}</div>
+                                                <div>Source: ${token.protocol}</div>
+                                                <div style="font-size: 0.8em; color: #64748b; margin-top: 5px;">Updated: ${new Date().toLocaleTimeString()}</div>
+                                            </div>
+            `;
+        }
+    </script>
+</body>
+
+</html>

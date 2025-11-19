@@ -1,0 +1,85 @@
+{
+    "info": {
+        "_postman_id": "meme-aggregator-api",
+        "name": "Meme Aggregator API",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Get Tokens (Search SOL)",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:3000/api/tokens?query=SOL",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "3000",
+                    "path": [
+                        "api",
+                        "tokens"
+                    ],
+                    "query": [
+                        {
+                            "key": "query",
+                            "value": "SOL"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Get Tokens (Sorted by Volume)",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:3000/api/tokens?query=SOL&sort=volume",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "3000",
+                    "path": [
+                        "api",
+                        "tokens"
+                    ],
+                    "query": [
+                        {
+                            "key": "query",
+                            "value": "SOL"
+                        },
+                        {
+                            "key": "sort",
+                            "value": "volume"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Health Check",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:3000/api/health",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "3000",
+                    "path": [
+                        "api",
+                        "health"
+                    ]
+                }
+            },
+            "response": []
+        }
+    ]
+}
