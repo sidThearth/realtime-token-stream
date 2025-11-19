@@ -10,6 +10,7 @@ export interface TokenData {
     priceChange24h: number;
     transactionCount: number;
     source: 'dexscreener' | 'jupiter' | 'aggregated';
+    protocol: 'dexscreener' | 'jupiter' | 'aggregated';
     lastUpdated: number;
 }
 

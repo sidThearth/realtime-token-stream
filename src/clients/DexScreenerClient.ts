@@ -30,6 +30,7 @@ export class DexScreenerClient {
                 priceChange24h: bestPair.priceChange.h24,
                 transactionCount: (bestPair.txns?.h24?.buys || 0) + (bestPair.txns?.h24?.sells || 0),
                 source: 'dexscreener',
+                protocol: 'dexscreener',
                 lastUpdated: Date.now(),
             };
         });
@@ -77,6 +78,7 @@ export class DexScreenerClient {
                             priceChange24h: pair.priceChange?.h24 || 0,
                             transactionCount: (pair.txns?.h24?.buys || 0) + (pair.txns?.h24?.sells || 0),
                             source: 'dexscreener',
+                            protocol: 'dexscreener',
                             lastUpdated: Date.now(),
                         });
                     }

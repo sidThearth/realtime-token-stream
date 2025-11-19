@@ -17,14 +17,19 @@ describe('TokenService', () => {
 
     const mockToken: TokenData = {
         tokenAddress: 'addr1',
-        tokenName: 'Test Token',
-        tokenTicker: 'TEST',
+        name: 'Test Token',
+        symbol: 'TEST',
         priceSol: 1.5,
-        liquiditySol: 1000,
-        volumeSol: 5000,
+        liquidity: 1000,
+        volume24h: 5000,
+        marketCap: 100000,
+        priceChange1h: 0,
+        priceChange24h: 0,
         transactionCount: 100,
-        protocol: 'dexscreener',
-        lastUpdated: new Date()
+        source: 'dexscreener' as const,
+        protocol: 'dexscreener' as const,
+        lastUpdated: Date.now(),
+
     };
 
     beforeEach(() => {
@@ -65,8 +70,8 @@ describe('TokenService', () => {
         });
 
         it('should prioritize DexScreener data over Jupiter', async () => {
-            const dexToken = { ...mockToken, priceSol: 1.5, protocol: 'dexscreener' };
-            const jupToken = { ...mockToken, priceSol: 1.0, protocol: 'jupiter' }; // Lower price, should be ignored
+            const dexToken = { ...mockToken, priceSol: 1.5, source: 'dexscreener' as const, protocol: 'dexscreener' as const };
+            const jupToken = { ...mockToken, priceSol: 1.0, source: 'jupiter' as const, protocol: 'jupiter' as const }; // Lower price, should be ignored
 
             mockCache.get.mockResolvedValue(null);
             mockDexScreener.searchTokens.mockResolvedValue([dexToken]);
@@ -75,11 +80,11 @@ describe('TokenService', () => {
             const result = await tokenService.searchTokens('TEST');
             expect(result).toHaveLength(1);
             expect(result[0].priceSol).toBe(1.5); // DexScreener price
-            expect(result[0].protocol).toBe('dexscreener');
+            expect(result[0].source).toBe('dexscreener');
         });
 
         it('should include Jupiter-only tokens', async () => {
-            const jupToken = { ...mockToken, tokenAddress: 'addr2', protocol: 'jupiter' };
+            const jupToken = { ...mockToken, tokenAddress: 'addr2', source: 'jupiter' as const, protocol: 'jupiter' as const };
 
             mockCache.get.mockResolvedValue(null);
             mockDexScreener.searchTokens.mockResolvedValue([mockToken]);

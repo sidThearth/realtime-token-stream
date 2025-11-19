@@ -35,6 +35,7 @@ export class JupiterClient {
                 priceChange24h: 0,
                 transactionCount: 0,
                 source: 'jupiter',
+                protocol: 'jupiter',
                 lastUpdated: Date.now(),
             }));
         } catch (error) {
