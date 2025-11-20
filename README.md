@@ -153,4 +153,4 @@ MIT
     - `REDIS_URL`: `redis://...` (optional)
 
 ### Public URL
-*(Add your deployed URL here after deployment)*
+[https://realtime-token-stream-production.up.railway.app](https://realtime-token-stream-production.up.railway.app)
